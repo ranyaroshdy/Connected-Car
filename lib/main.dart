@@ -45,14 +45,17 @@ calculateTime(distance, from, to) {
 
 class _MyHomePageState extends State<MyHomePage> {
   Position _position;
-  Position _initialPosition;
-  Position _finalPosition;
-  double distanceOne;
-  double distanceTwo;
+  //Position _initialPosition;
+  //Position _finalPosition;
+  bool startSWatch = false;
+  bool startSWatchFinal = false;
+  int timeOne;
+  int timeTwo;
   StreamSubscription<Position> _streamSubscription;
   @override
   void initState() {
     super.initState();
+    var stopWatch = Stopwatch();
     var geolocator = Geolocator();
     var locationOptions =
         LocationOptions(accuracy: LocationAccuracy.high, distanceFilter: 10);
@@ -61,18 +64,31 @@ class _MyHomePageState extends State<MyHomePage> {
         .listen((Position position) {
       setState(() {
         _position = position;
-        if ((position.speed * 3.6).truncate() == 10) {
-          _initialPosition = position;
-          distanceTwo = calculateDistance(_finalPosition, _initialPosition);
-          if (distanceTwo != null) {
-            _initialPosition = _finalPosition = null;
-          }
-        } else if ((position.speed * 3.6).truncate() == 30) {
-          _finalPosition = position;
-          distanceOne = calculateDistance(_initialPosition, _finalPosition);
-          if (distanceOne != null) {
-            _initialPosition = _finalPosition = null;
-          }
+        print((position.speed * 3.6).truncate());
+        if ((position.speed * 3.6).truncate() >= 10 &&
+            (position.speed * 3.6).truncate() < 30 &&
+            startSWatch == false &&
+            startSWatchFinal == false) {
+          stopWatch.start();
+          startSWatch = true;
+        } else if ((position.speed * 3.6).truncate() >= 30 &&
+            startSWatch == true) {
+          stopWatch.stop();
+          timeOne = stopWatch.elapsed.inSeconds;
+          print(timeOne);
+          stopWatch.reset();
+          startSWatch = false;
+          stopWatch.start();
+          startSWatchFinal = true;
+        } else if ((position.speed * 3.6).truncate() <= 10 &&
+            stopWatch.isRunning == true &&
+            startSWatchFinal == true) {
+          stopWatch.stop();
+          timeTwo = stopWatch.elapsed.inSeconds;
+          print(timeTwo);
+          stopWatch.reset();
+          stopWatch = Stopwatch();
+          startSWatchFinal = false;
         }
       });
     });
@@ -107,8 +123,7 @@ class _MyHomePageState extends State<MyHomePage> {
               style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 10.0),
-            Text(
-                '${(distanceOne == null) ? 0 : calculateTime(distanceOne, 10, 30)}',
+            Text('${(timeOne == null) ? 0 : timeOne}',
                 style: TextStyle(
                     color: Colors.green, fontFamily: 'digital', fontSize: 70)),
             SizedBox(height: 15.0),
@@ -121,8 +136,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   fontWeight: FontWeight.bold,
                 )),
             SizedBox(height: 10.0),
-            Text(
-                '${(distanceTwo == null) ? 0 : calculateTime(distanceTwo, 30, 10)}',
+            Text('${(timeTwo == null) ? 0 : timeTwo}',
                 style: TextStyle(
                     color: Colors.green, fontFamily: 'digital', fontSize: 70)),
             SizedBox(height: 15.0),
